@@ -1,0 +1,50 @@
+{
+  "name": "@klondikemarlen/expect-http-response",
+  "version": "1.0.0",
+  "description": "One-expect HTTP response contracts for Jest and Vitest",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./index.d.mts",
+      "import": "./index.mjs"
+    }
+  },
+  "files": [
+    "index.mjs",
+    "index.d.mts",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "scripts": {
+    "test": "node --test tests/to-have-http-response.test.mjs && vitest run && tsc --noEmit -p tsconfig.json",
+    "test:unit": "node --test tests/to-have-http-response.test.mjs",
+    "test:integration": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/klondikemarlen/expect-http-response.git"
+  },
+  "homepage": "https://github.com/klondikemarlen/expect-http-response#readme",
+  "bugs": {
+    "url": "https://github.com/klondikemarlen/expect-http-response/issues"
+  },
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.6.5",
+    "@types/supertest": "^7.2.1",
+    "expect": "^30.5.2",
+    "express": "^5.3.0",
+    "supertest": "^7.3.1",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.4"
+  }
+}
