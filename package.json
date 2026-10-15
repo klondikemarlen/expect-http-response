@@ -1,7 +1,7 @@
 {
   "name": "@klondikemarlen/expect-http-response",
-  "version": "1.0.0",
-  "description": "One-expect HTTP response contracts for Jest and Vitest",
+  "version": "1.0.1",
+  "description": "Focused HTTP response failure diagnostics for Jest and Vitest",
   "license": "MIT",
   "type": "module",
   "exports": {
