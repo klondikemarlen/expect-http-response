@@ -58,10 +58,8 @@ function formatMessage(context, result) {
       hint,
       "",
       "Expected the response not to match this HTTP contract:",
-      `Expected status: ${printValue(context, "printExpected", result.expectedStatus)}`,
-      `Received status: ${printValue(context, "printReceived", result.receivedStatus)}`,
-      `Expected body: ${printValue(context, "printExpected", result.expectedBody)}`,
-      `Received body: ${printValue(context, "printReceived", result.receivedBody)}`,
+      `Matched status: ${printValue(context, "printReceived", result.receivedStatus)}`,
+      "The status and body both matched.",
     ].join("\n")
   }
 
@@ -77,12 +75,34 @@ function formatMessage(context, result) {
     lines.push(
       "",
       "Body mismatch:",
-      `Expected body: ${printValue(context, "printExpected", result.expectedBody)}`,
-      `Received body: ${printValue(context, "printReceived", result.receivedBody)}`
+      formatBodyDifference(context, result.expectedBody, result.receivedBody)
     )
   }
 
   return lines.join("\n")
+}
+
+function formatBodyDifference(context, expectedBody, receivedBody) {
+  const formatter = context.utils?.printDiffOrStringify
+  let difference
+
+  if (typeof formatter === "function") {
+    // Jest uses five positional arguments; Vitest uses three or four, with reversed values.
+    if (formatter.length >= 5) {
+      difference = formatter(expectedBody, receivedBody, "Expected body", "Received body", false)
+    } else {
+      difference = formatter(receivedBody, expectedBody, { expand: false })
+    }
+  }
+
+  if (typeof difference === "string") {
+    return difference
+  }
+
+  return [
+    `Expected body: ${printValue(context, "printExpected", expectedBody)}`,
+    `Received body: ${printValue(context, "printReceived", receivedBody)}`,
+  ].join("\n")
 }
 
 function matcherHint(context) {

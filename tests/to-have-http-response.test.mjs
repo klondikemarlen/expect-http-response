@@ -42,6 +42,7 @@ await test("when only status differs, reports the expected and received statuses
       assert.match(error.message, /Status mismatch/u)
       assert.match(error.message, /200/u)
       assert.match(error.message, /503/u)
+      assert.doesNotMatch(error.message, /available/u)
       return true
     }
   )
@@ -87,14 +88,22 @@ await test("when the status differs, negation accepts the different response con
   expect(response).not.toHaveHttpResponse(404, { message: "ready" })
 })
 
-await test("when the whole response matches, negation rejects the matching contract", () => {
+await test("when a large response matches, negation explains the match without dumping the body", () => {
   // Arrange
-  const response = { status: 200, body: { message: "ready" } }
+  const body = {
+    matchedPayload: Array.from({ length: 100 }, (_, index) => ({ id: index + 1 })),
+  }
+  const response = { status: 200, body }
 
   // Act / Assert
   assert.throws(
-    () => expect(response).not.toHaveHttpResponse(200, { message: "ready" }),
-    /Expected the response not to match this HTTP contract/u
+    () => expect(response).not.toHaveHttpResponse(200, body),
+    (error) => {
+      assert.match(error.message, /status and body both matched/u)
+      assert.match(error.message, /200/u)
+      assert.doesNotMatch(error.message, /matchedPayload|\[Object\]/u)
+      return true
+    }
   )
 })
 
@@ -188,6 +197,56 @@ await test("when custom equality applies, honors the runner-registered tester", 
 
   // Act / Assert
   expect(response).toHaveHttpResponse(200, expectedBody)
+})
+
+await test("when status and body differ, reports both failures", () => {
+  // Arrange
+  const response = { status: 503, body: { message: "temporarily offline" } }
+
+  // Act / Assert
+  assert.throws(
+    () => expect(response).toHaveHttpResponse(200, { message: "ready" }),
+    (error) => {
+      assert.match(error.message, /200/u)
+      assert.match(error.message, /503/u)
+      assert.match(error.message, /temporarily offline/u)
+      assert.match(error.message, /ready/u)
+      return true
+    }
+  )
+})
+
+await test("when partial matches surround a body difference, does not expose fields excluded by those matches", () => {
+  // Arrange
+  const response = {
+    status: 200,
+    body: {
+      records: [
+        { id: 1, detail: "unrelated-first-record-detail" },
+        { id: 2, name: "Actual record", detail: "unrelated-middle-record-detail" },
+        { id: 3, detail: "unrelated-last-record-detail" },
+      ],
+    },
+  }
+  const expectedBody = {
+    records: [
+      expect.objectContaining({ id: 1 }),
+      expect.objectContaining({ id: 2, name: "Expected record" }),
+      expect.objectContaining({ id: 3 }),
+    ],
+  }
+
+  // Act / Assert
+  assert.throws(
+    () => expect(response).toHaveHttpResponse(200, expectedBody),
+    (error) => {
+      assert.match(error.message, /Expected record/u)
+      assert.match(error.message, /Actual record/u)
+      assert.doesNotMatch(error.message, /unrelated-first-record-detail/u)
+      assert.doesNotMatch(error.message, /unrelated-last-record-detail/u)
+      return true
+    }
+  )
 })
 
 function isTaggedLabel(value) {

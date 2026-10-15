@@ -12,7 +12,22 @@ interface HttpResponseLike {
   readonly body?: unknown
 }
 
+type JestBodyFormatter = (
+  expected: unknown,
+  received: unknown,
+  expectedLabel: string,
+  receivedLabel: string,
+  expand: boolean
+) => string
+
+type VitestBodyFormatter = (
+  received: unknown,
+  expected: unknown,
+  options?: { expand?: boolean }
+) => string | undefined
+
 interface MatcherUtils {
+  printDiffOrStringify?: JestBodyFormatter | VitestBodyFormatter
   matcherHint?: (
     matcherName: string,
     received?: string,
