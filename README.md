@@ -4,7 +4,7 @@ Readable HTTP response failures for Jest and Vitest: focused status errors and c
 
 ## Why This Matcher Exists
 
-The goal is readable failures, not satisfying an assertion-count quota. Separate status and body assertions are a useful baseline:
+`toHaveHttpResponse` expresses the response status and complete body as one HTTP contract, with focused diagnostics when that contract fails. Separate status and body assertions provide a useful comparison:
 
 ```js
 expect(response.status).toEqual(200)
@@ -19,7 +19,7 @@ expect(response).toEqual(expect.objectContaining({ status: 200, body: expectedBo
 
 However, a failure against the whole Supertest response can include unrelated headers, request metadata, and raw response text. `toMatchObject` is not an equivalent complete-body replacement: its partial matching can accept unexpected body fields.
 
-`toHaveHttpResponse` keeps the focused diagnostics of the two-expect approach while naming one HTTP response contract:
+`toHaveHttpResponse` combines the status and body checks while keeping their diagnostics focused:
 
 ```js
 expect(response).toHaveHttpResponse(200, expectedBody)
@@ -39,6 +39,43 @@ For example, a changed field among 100 response records remains visible in the d
 ```
 
 This changes the diagnostic boundary, not the equality policy. Complete-body comparison, deliberate asymmetric matches, and the runner's custom equality testers retain their existing meaning.
+
+### Example: Whole-Response Failure
+
+In a real controller test, the expected title of a returned notice was deliberately changed. On Vitest 4.1.11, the whole-response `toEqual(expect.objectContaining(...))` assertion above produced the following selected diff lines. Domain names and fixture values are anonymized; `...` marks omitted output:
+
+```diff
+-   "body": {
+-     "notices": [
+-       ObjectContaining {
+-         "id": 1,
+-         "title": "Scheduled maintenance",
+...
++   "header": {
++     "content-type": "application/json; charset=utf-8",
+...
++   "req": {
++     "method": "GET",
++     "url": "http://127.0.0.1:<port>/notices",
+...
++   "text": "{\"notices\":[...\"title\":\"Active notice\"...]}",
+```
+
+The expected title appears under `body`, but the received title is embedded in escaped response text among unrelated transport details.
+
+Using the same expected body with `toHaveHttpResponse` produced these selected lines instead:
+
+```diff
+Body mismatch:
+- Expected
++ Received
+...
+-       "title": "Scheduled maintenance",
+...
++       "title": "Active notice",
+```
+
+Both titles are now part of the body comparison, without headers, request metadata, or raw response text. Other body fields can still appear according to the runner's native asymmetric-match formatting.
 
 ## Installation
 
@@ -214,17 +251,17 @@ npm test
 npm pack --dry-run
 git switch main
 git pull --ff-only origin main
-git tag v1.0.1
-git push origin v1.0.1
-gh release create v1.0.1 --title v1.0.1 --generate-notes
+git tag v1.0.2
+git push origin v1.0.2
+gh release create v1.0.2 --title v1.0.2 --generate-notes
 npm publish --access public
-npm view @klondikemarlen/expect-http-response@1.0.1 version
+npm view @klondikemarlen/expect-http-response@1.0.2 version
 ```
 
 In a separate consumer project, install the registry artifact:
 
 ```sh
-npm install --save-dev @klondikemarlen/expect-http-response@1.0.1
+npm install --save-dev @klondikemarlen/expect-http-response@1.0.2
 ```
 
 After publishing, use the actual registry installation in a fresh consumer project and run its matcher and TypeScript registration checks. Do not claim npm availability until the publish and registry install have been observed.
