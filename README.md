@@ -1,6 +1,44 @@
 # @klondikemarlen/expect-http-response
 
-One `expect` can describe an HTTP response contract: its status and complete body. This dependency-free ESM matcher works with Jest's `expect` and Vitest. Register it explicitly with your existing test runner.
+Readable HTTP response failures for Jest and Vitest: focused status errors and contextual body diffs, without unrelated transport internals. One `expect` describes the status and complete body. This dependency-free ESM matcher is registered explicitly with your existing test runner.
+
+## Why This Matcher Exists
+
+The goal is readable failures, not satisfying an assertion-count quota. Separate status and body assertions are a useful baseline:
+
+```js
+expect(response.status).toEqual(200)
+expect(response.body).toEqual(expectedBody)
+```
+
+Those assertions keep an incorrect status obvious and give the body its own native diff. A stock matcher can express the combined contract too:
+
+```js
+expect(response).toEqual(expect.objectContaining({ status: 200, body: expectedBody }))
+```
+
+However, a failure against the whole Supertest response can include unrelated headers, request metadata, and raw response text. `toMatchObject` is not an equivalent complete-body replacement: its partial matching can accept unexpected body fields.
+
+`toHaveHttpResponse` keeps the focused diagnostics of the two-expect approach while naming one HTTP response contract:
+
+```js
+expect(response).toHaveHttpResponse(200, expectedBody)
+```
+
+- A status-only failure reports the differing statuses without printing the matching body.
+- A body failure uses the active runner's contextual diff, exposing changed nested values rather than dumping both collections or hiding them as `[Object]`.
+- If both differ, both failures are reported; separate assertions normally stop at the first failed status assertion.
+- Failed negation explains that status and body both matched without printing the matching payload twice.
+
+For example, a changed field among 100 response records remains visible in the diff (excerpt):
+
+```diff
+         "id": 50,
+-        "name": "Expected record 50",
++        "name": "Record 50",
+```
+
+This changes the diagnostic boundary, not the equality policy. Complete-body comparison, deliberate asymmetric matches, and the runner's custom equality testers retain their existing meaning.
 
 ## Installation
 
@@ -73,6 +111,8 @@ export default defineConfig({
 ### Other Compatible Runners
 
 Import the matcher from the package root and extend the active runner's `expect` instance explicitly. The matcher relies on the runner's equality function and custom matcher context; it does not bundle or select a runner.
+
+Focused failures use the runner's `utils.printDiffOrStringify`, which Jest and Vitest supply through `expect.extend`. Other compatible runners need a Jest- or Vitest-compatible version of that utility for contextual diffs; without it, only basic expected/received rendering is available.
 
 ## TypeScript
 
@@ -174,17 +214,17 @@ npm test
 npm pack --dry-run
 git switch main
 git pull --ff-only origin main
-git tag v1.0.0
-git push origin v1.0.0
-gh release create v1.0.0 --title v1.0.0 --generate-notes
+git tag v1.0.1
+git push origin v1.0.1
+gh release create v1.0.1 --title v1.0.1 --generate-notes
 npm publish --access public
-npm view @klondikemarlen/expect-http-response@1.0.0 version
+npm view @klondikemarlen/expect-http-response@1.0.1 version
 ```
 
 In a separate consumer project, install the registry artifact:
 
 ```sh
-npm install --save-dev @klondikemarlen/expect-http-response@1.0.0
+npm install --save-dev @klondikemarlen/expect-http-response@1.0.1
 ```
 
 After publishing, use the actual registry installation in a fresh consumer project and run its matcher and TypeScript registration checks. Do not claim npm availability until the publish and registry install have been observed.
