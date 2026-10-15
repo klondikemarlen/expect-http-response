@@ -4,7 +4,7 @@ Readable HTTP response failures for Jest and Vitest: focused status errors and c
 
 ## Why This Matcher Exists
 
-The goal is readable failures, not satisfying an assertion-count quota. Separate status and body assertions are a useful baseline:
+`toHaveHttpResponse` expresses the response status and complete body as one HTTP contract, with focused diagnostics when that contract fails. Separate status and body assertions provide a useful comparison:
 
 ```js
 expect(response.status).toEqual(200)
@@ -19,7 +19,7 @@ expect(response).toEqual(expect.objectContaining({ status: 200, body: expectedBo
 
 However, a failure against the whole Supertest response can include unrelated headers, request metadata, and raw response text. `toMatchObject` is not an equivalent complete-body replacement: its partial matching can accept unexpected body fields.
 
-`toHaveHttpResponse` keeps the focused diagnostics of the two-expect approach while naming one HTTP response contract:
+`toHaveHttpResponse` combines the status and body checks while keeping their diagnostics focused:
 
 ```js
 expect(response).toHaveHttpResponse(200, expectedBody)
@@ -214,17 +214,17 @@ npm test
 npm pack --dry-run
 git switch main
 git pull --ff-only origin main
-git tag v1.0.1
-git push origin v1.0.1
-gh release create v1.0.1 --title v1.0.1 --generate-notes
+git tag v1.0.2
+git push origin v1.0.2
+gh release create v1.0.2 --title v1.0.2 --generate-notes
 npm publish --access public
-npm view @klondikemarlen/expect-http-response@1.0.1 version
+npm view @klondikemarlen/expect-http-response@1.0.2 version
 ```
 
 In a separate consumer project, install the registry artifact:
 
 ```sh
-npm install --save-dev @klondikemarlen/expect-http-response@1.0.1
+npm install --save-dev @klondikemarlen/expect-http-response@1.0.2
 ```
 
 After publishing, use the actual registry installation in a fresh consumer project and run its matcher and TypeScript registration checks. Do not claim npm availability until the publish and registry install have been observed.
