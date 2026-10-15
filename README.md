@@ -40,6 +40,43 @@ For example, a changed field among 100 response records remains visible in the d
 
 This changes the diagnostic boundary, not the equality policy. Complete-body comparison, deliberate asymmetric matches, and the runner's custom equality testers retain their existing meaning.
 
+### Example: Whole-Response Failure
+
+In a real controller test, the expected title of a returned notice was deliberately changed. On Vitest 4.1.11, the whole-response `toEqual(expect.objectContaining(...))` assertion above produced the following selected diff lines. Domain names and fixture values are anonymized; `...` marks omitted output:
+
+```diff
+-   "body": {
+-     "notices": [
+-       ObjectContaining {
+-         "id": 1,
+-         "title": "Scheduled maintenance",
+...
++   "header": {
++     "content-type": "application/json; charset=utf-8",
+...
++   "req": {
++     "method": "GET",
++     "url": "http://127.0.0.1:<port>/notices",
+...
++   "text": "{\"notices\":[...\"title\":\"Active notice\"...]}",
+```
+
+The expected title appears under `body`, but the received title is embedded in escaped response text among unrelated transport details.
+
+Using the same expected body with `toHaveHttpResponse` produced these selected lines instead:
+
+```diff
+Body mismatch:
+- Expected
++ Received
+...
+-       "title": "Scheduled maintenance",
+...
++       "title": "Active notice",
+```
+
+Both titles are now part of the body comparison, without headers, request metadata, or raw response text. Other body fields can still appear according to the runner's native asymmetric-match formatting.
+
 ## Installation
 
 Install a published release as a development dependency:
